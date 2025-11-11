@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    k8s.ovn.org/primary-user-defined-network: ""
+    network: evpnl3
+  name: evpnl3
+---
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: evpnl3
+  labels:
+    advertise: "true"
+    network: evpnl3
+    ipvrf: "true"
+spec:
+  namespaceSelector:
+    matchLabels:
+      network: evpnl3
+  network:
+    topology: Layer3
+    layer3:
+      role: Primary
+      subnets:
+        - cidr: "22.100.0.0/16"
+          hostSubnet: 24
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nettools
+  namespace: evpnl3
+spec:
+  nodeName: worker-1.ostest.test.metalkube.org
+  containers:
+  - name: nettools
+    image: jrecord/nettools:latest
+    command:
+      - sleep
+      - "3600d"
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nettools-2
+  namespace: evpnl3
+spec:
+  nodeName: worker-2.ostest.test.metalkube.org
+  containers:
+  - name: nettools
+    image: jrecord/nettools:latest
+    command:
+      - sleep
+      - "3600d"
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Never

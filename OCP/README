@@ -1,0 +1,28 @@
+This script configures BGP to advertise and connect pod networks in different
+ways.
+
+The enviroment is assumed to be a dev-scripts setup or equivalent, where this
+script runs on the hypervisor.
+
+This script:
+
+* runs an FRR container representing a router/spine external BGP peer
+* for every advertised network configuration, an external agnhost container is
+  created connected exclusively to that network through the FRR container in
+  that configuration 
+* advertises the default pod network over the default VRF
+* advertises [every network][1] defined in EXTRA_NETWORKS dev-scripts
+  variable in a VRF-Lite configuration
+* advertises networks [labeled with `macvrf=true`][2] in a [EVPN MACVRF][3] configuration
+* advertises network [labeled with `ipvrf=true`][2] in a [EVPN IPVRF][3] configuration
+
+For EVPN networks, the script can stub the OCP EVPN implementation if
+`EVPN_IMPLEMENTED` nevironment variable is set to 0
+
+See 
+
+[1]: TODO: only supports one network
+[2]: L2 networks can labeled both ways at the same time, L3 networks only with
+     `ipvrf=true`. Network also needs to be labeled with `network=<network name>`
+[3]: TODO: only IPv4 supported
+

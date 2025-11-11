@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    k8s.ovn.org/primary-user-defined-network: ""
+    network: evpnl2
+  name: evpnl2
+---
+apiVersion: k8s.ovn.org/v1
+kind: VTEP
+metadata:
+  name: evpn-vtep
+spec:
+  mode: Unmanaged
+  cidrs:
+    - 192.168.111.0/24
+---
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: evpnl2
+  labels:
+    advertise: "true"
+    network: evpnl2
+    macvrf: "true"
+    ipvrf: "true"
+spec:
+  namespaceSelector:
+    matchLabels:
+      network: evpnl2
+  network:
+    topology: Layer2
+    transport: EVPN
+    layer2:
+      role: Primary
+      subnets:
+      - "22.100.0.0/16"
+    evpn:
+      vtep: evpn-vtep
+      macVRF:
+        vni: 20100
+      ipVRF:
+        vni: 20101
+---
+apiVersion: k8s.ovn.org/v1
+kind: RouteAdvertisements
+metadata:
+  name: evpnl2
+spec:
+  nodeSelector: {}
+  frrConfigurationSelector:
+    matchLabels:
+      network: default
+  networkSelectors:
+    - networkSelectionType: ClusterUserDefinedNetworks
+      clusterUserDefinedNetworkSelector:
+        networkSelector:
+          matchLabels:
+            network: evpnl2
+  targetVRF: auto
+  advertisements:
+    - PodNetwork
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nettools
+  namespace: evpnl2
+spec:
+  nodeName: worker-1.ostest.test.metalkube.org
+  containers:
+  - name: nettools
+    image: jrecord/nettools:latest
+    command:
+      - sleep
+      - "3600d"
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nettools-2
+  namespace: evpnl2
+spec:
+  nodeName: worker-2.ostest.test.metalkube.org
+  containers:
+  - name: nettools
+    image: jrecord/nettools:latest
+    command:
+      - sleep
+      - "3600d"
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Never
